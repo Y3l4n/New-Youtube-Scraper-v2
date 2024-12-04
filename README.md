@@ -7,6 +7,10 @@
 
 Please read everything here (all of it, lots of new stuff).
 
+### Update 4/12
+
+The `scraper_json_AI.py` and `yt_stats_self_test_AI.py` are usable now, they will fetch same channel video_data (for `yt_stats_self_test_AI.py`) and trending video_data (for `scraper_json_AI.py`). See sample data in sample folder.
+
 ### New data file format
 
 The `scraper_json.py` file is the OG `scraper_to_use.py` from [my Trending-Youtube-Scraper](https://github.com/Y3l4n/Trending-Youtube-Scraper), but now instead of returning csv rows it now returns json, each bracket is 1 row. See usage in the `scraper_json_imple.py`. See sample in sample_trending_data directory. You guys can suggest more properties here if you like, and I will see to it.
