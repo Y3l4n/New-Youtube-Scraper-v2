@@ -1,0 +1,14 @@
+- Calculate average views per day for each trending videos (200 numbers)
+- Calculate average views per day for all videos (1 number) (2)
+- (2) will be used as trending / used to trend video benchmark for non-trend videos (inside channels)
+
+- Prediction: assign possible_trending_vid (bool) to non-trend videos in channel database using the above calculation
+(Binary classification)
+
+- Trend: A video which gains a large amount of attention (views in this case) on YouTube
+- Hypothesis: A video with high view count is more likely to be clicked on
+
+- To-do:
+Add average_views_per_day_for_trending_videos in trending_data
+Add is_trending_vid (bool) to channel video_data
+(using average_views_per_day_for_trending_videos)
