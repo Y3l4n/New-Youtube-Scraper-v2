@@ -11,15 +11,29 @@ Please read everything here (all of it, lots of new stuff).
 
 `YoutubeScraper` and `YTStatsProMax` got these additional updates, both scripts support batch processing. 
 
-- Remove `defaultAudioLanguage` (since insignificant and a considerable number of videos don't have it)
-- Remove `country` in `channel_statistics` (similar reason to `defaultAudioLanguage`)
-- Add in `RECORDED_UTC_TIME` to record the fetching date (in UTC format to match that of YouTube)
+- Remove `defaultAudioLanguage` (since insignificant and a considerable number of videos don't have it).
+- Remove `country` in `channel_statistics` (similar reason to `defaultAudioLanguage`).
+- Add in `RECORDED_UTC_TIME` to record the fetching date (in UTC format to match that of YouTube).
 - Add in `elapsedDays` to calculate time elapsed (in days) by taking `RECORDED_UTC_TIME` - `publishedAt`.
 - Add in `avgDailyViews` to calculate average daily views by taking `viewCount` / `elapsedDays`.
 
 See sample data for more details.
 
-#### Helper functions
+### Issues 7/12 (please read)
+
+The fetched video data via `YTStatsProMax` has a small problem (fixable). It now interact with a channel's uploaded playlist; every channel has this, for example [Post Malone's uploaded videos](https://www.youtube.com/playlist?list=UUeLHszkByNZtPKcaVXOCOQQ). It includes **ALL** uploaded videos, which means it may fetch unpublished videos (scheduled) (these has 0 `viewCount`), and so on. That's also the reason why I haven't fixed the `channel_statistics` in `YTStatsProMax`, because the number of videos provided in that url is inaccurate, compared to the uploaded playlist of the channel, and I don't know what to use `channel_statistics` for in our case, another option could be take what's fetchable, then pre-process later.
+
+I set the number of fetched videos to 500 (50 videos per page, 10 loops), for safety with Google API, and most channels have < 500 videos. I've tested with 1000 videos (20 loops) (some channels have crazy upload habits), still works, but it's too overwhelming a number. Plus, fetching too many videos may cause further problem in the prediction stage. Setting a limit of 500 may sound like a lot, but sometimes it omits (plenty) of old videos that are / were popular (this is tested).
+
+#### Proposed solution
+
+Fetch the channel videos from **Specific playlists** only, for example [Post Malone's popular videos](https://www.youtube.com/playlist?list=UULPeLHszkByNZtPKcaVXOCOQQ) and [Post Malone's popular short videos](https://www.youtube.com/playlist?list=UUPSeLHszkByNZtPKcaVXOCOQQ). These playlists have pattern to track it down via channel id; in fact, I find the uploaded videos id this way.
+
+Doing this will reduce the number of collected videos, also it will ensure all the popular videos are included. Not all of them will trend though, after seeing the lists, my rough guess is they include videos that have a high (? - not sure, around 100k according to Post Malone) `viewCount`. This will match our theme of trending videos as well. 
+
+Let me know your opinion / suggestion soon. (This is long because it's a whole day work).
+
+### Helper functions
 
 Inside `yt_helpers` are helpers function which supports some pre-processing after the data is collected. The `fetch_channel_ids.py` will collect all channel ids from trending videos, store them inside `channel_ids.txt` file. You can use that to batch fetching channel statistics via `YTStatsProMax` class. Will add more helpers but need suggestions.
 
