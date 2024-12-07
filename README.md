@@ -7,6 +7,22 @@
 
 Please read everything here (all of it, lots of new stuff).
 
+### Update 7/12
+
+`YoutubeScraper` and `YTStatsProMax` got these additional updates, both scripts support batch processing. 
+
+- Remove `defaultAudioLanguage` (since insignificant and a considerable number of videos don't have it)
+- Remove `country` in `channel_statistics` (similar reason to `defaultAudioLanguage`)
+- Add in `RECORDED_UTC_TIME` to record the fetching date (in UTC format to match that of YouTube)
+- Add in `elapsedDays` to calculate time elapsed (in days) by taking `RECORDED_UTC_TIME` - `publishedAt`.
+- Add in `avgDailyViews` to calculate average daily views by taking `viewCount` / `elapsedDays`.
+
+See sample data for more details.
+
+#### Helper functions
+
+Inside `yt_helpers` are helpers function which supports some pre-processing after the data is collected. The `fetch_channel_ids.py` will collect all channel ids from trending videos, store them inside `channel_ids.txt` file. You can use that to batch fetching channel statistics via `YTStatsProMax` class. Will add more helpers but need suggestions.
+
 ### Update 4/12
 
 The `scraper_json_AI.py` and `yt_stats_self_test_AI.py` are usable now, they will fetch same channel video_data (for `yt_stats_self_test_AI.py`) and trending video_data (for `scraper_json_AI.py`). See sample data in sample folder.
