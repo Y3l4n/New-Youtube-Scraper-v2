@@ -1,10 +1,15 @@
+import time
 import requests
 import json
 import re
 from collections import Counter
 import os
+from datetime import datetime, timezone
+from tqdm import tqdm
 
 class YTStatsProMax:
+    
+    RECORDED_UTC_TIME = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     
     # Category mapping for YouTube standard categories
     CATEGORY_MAPPING = {
@@ -40,196 +45,6 @@ class YTStatsProMax:
         "42": "Shorts",
         "43": "Shows",
         "44": "Trailers"
-    }
-    
-    DEFAULT_AUDIO_LANGUAGE = {
-        "zxx": "Not applicable",
-        "ab": "Abkhazian",
-        "aa": "Afar",
-        "af": "Afrikaans",
-        "sq": "Albanian",
-        "ase": "American Sign Language",
-        "am": "Amharic",
-        "ar": "Arabic",
-        "arc": "Aramaic",
-        "hy": "Armenian",
-        "as": "Assamese",
-        "ay": "Aymara",
-        "az": "Azerbaijani",
-        "bn": "Bangla",
-        "ba": "Bashkir",
-        "eu": "Basque",
-        "be": "Belarusian",
-        "bh": "Bihari",
-        "bi": "Bislama",
-        "bs": "Bosnian",
-        "br": "Breton",
-        "bg": "Bulgarian",
-        "yue": "Cantonese",
-        "yue-HK": "Cantonese (Hong Kong)",
-        "ca": "Catalan",
-        "chr": "Cherokee",
-        "zh": "Chinese",
-        "zh-CN": "Chinese (China)",
-        "zh-HK": "Chinese (Hong Kong)",
-        "zh-Hans": "Chinese (Simplified)",
-        "zh-SG": "Chinese (Singapore)",
-        "zh-TW": "Chinese (Taiwan)",
-        "zh-Hant": "Chinese (Traditional)",
-        "cho": "Choctaw",
-        "co": "Corsican",
-        "hr": "Croatian",
-        "cs": "Czech",
-        "da": "Danish",
-        "nl": "Dutch",
-        "nl-BE": "Dutch (Belgium)",
-        "nl-NL": "Dutch (Netherlands)",
-        "dz": "Dzongkha",
-        "en": "English",
-        "en-CA": "English (Canada)",
-        "en-IE": "English (Ireland)",
-        "en-GB": "English (United Kingdom)",
-        "en-US": "English (United States)",
-        "eo": "Esperanto",
-        "et": "Estonian",
-        "fo": "Faroese",
-        "fj": "Fijian",
-        "fil": "Filipino",
-        "fi": "Finnish",
-        "fr": "French",
-        "fr-BE": "French (Belgium)",
-        "fr-CA": "French (Canada)",
-        "fr-FR": "French (France)",
-        "fr-CH": "French (Switzerland)",
-        "gl": "Galician",
-        "ka": "Georgian",
-        "de": "German",
-        "de-AT": "German (Austria)",
-        "de-DE": "German (Germany)",
-        "de-CH": "German (Switzerland)",
-        "el": "Greek",
-        "kl": "Greenlandic (Kalaallisut)",
-        "gn": "Guarani",
-        "gu": "Gujarati",
-        "hak": "Hakka Chinese",
-        "hak-TW": "Hakka Chinese (Taiwan)",
-        "ha": "Hausa",
-        "iw": "Hebrew",
-        "hi": "Hindi",
-        "hi-Latn": "Hindi (Phonetic)",
-        "hu": "Hungarian",
-        "is": "Icelandic",
-        "ig": "Igbo",
-        "id": "Indonesian",
-        "ia": "Interlingua",
-        "ie": "Interlingue",
-        "iu": "Inuktitut",
-        "ik": "Inupiaq",
-        "ga": "Irish",
-        "it": "Italian",
-        "ja": "Japanese",
-        "jv": "Javanese",
-        "kn": "Kannada",
-        "ks": "Kashmiri",
-        "kk": "Kazakh",
-        "km": "Khmer",
-        "rw": "Kinyarwanda",
-        "tlh": "Klingon",
-        "ko": "Korean",
-        "ku": "Kurdish",
-        "ky": "Kyrgyz",
-        "lo": "Lao",
-        "la": "Latin",
-        "lv": "Latvian",
-        "ln": "Lingala",
-        "lt": "Lithuanian",
-        "lb": "Luxembourgish",
-        "mk": "Macedonian",
-        "mg": "Malagasy",
-        "ms": "Malay",
-        "ml": "Malayalam",
-        "mt": "Maltese",
-        "mi": "Maori",
-        "mr": "Marathi",
-        "mas": "Masai",
-        "nan": "Min Nan Chinese",
-        "nan-TW": "Min Nan Chinese (Taiwan)",
-        "mo": "Moldavian",
-        "mn": "Mongolian",
-        "my": "Myanmar (Burmese)",
-        "na": "Nauru",
-        "nv": "Navajo",
-        "ne": "Nepali",
-        "no": "Norwegian",
-        "oc": "Occitan",
-        "or": "Odia",
-        "om": "Oromo",
-        "ps": "Pashto",
-        "fa": "Persian",
-        "fa-AF": "Persian (Afghanistan)",
-        "fa-IR": "Persian (Iran)",
-        "pl": "Polish",
-        "pt": "Portuguese",
-        "pt-BR": "Portuguese (Brazil)",
-        "pt-PT": "Portuguese (Portugal)",
-        "pa": "Punjabi",
-        "qu": "Quechua",
-        "ro": "Romanian",
-        "rm": "Romansh",
-        "rn": "Rundi",
-        "ru": "Russian",
-        "ru-Latn": "Russian (Phonetic)",
-        "sm": "Samoan",
-        "sg": "Sango",
-        "sa": "Sanskrit",
-        "gd": "Scottish Gaelic",
-        "sr": "Serbian",
-        "sr-Cyrl": "Serbian (Cyrillic)",
-        "sr-Latn": "Serbian (Latin)",
-        "sh": "Serbo-Croatian",
-        "sdp": "Sherdukpen",
-        "sn": "Shona",
-        "sd": "Sindhi",
-        "si": "Sinhala",
-        "sk": "Slovak",
-        "sl": "Slovenian",
-        "so": "Somali",
-        "st": "Southern Sotho",
-        "es": "Spanish",
-        "es-419": "Spanish (Latin America)",
-        "es-MX": "Spanish (Mexico)",
-        "es-ES": "Spanish (Spain)",
-        "su": "Sundanese",
-        "sw": "Swahili",
-        "ss": "Swati",
-        "sv": "Swedish",
-        "tl": "Tagalog",
-        "tg": "Tajik",
-        "ta": "Tamil",
-        "tt": "Tatar",
-        "te": "Telugu",
-        "th": "Thai",
-        "bo": "Tibetan",
-        "ti": "Tigrinya",
-        "to": "Tongan",
-        "ts": "Tsonga",
-        "tn": "Tswana",
-        "tr": "Turkish",
-        "tk": "Turkmen",
-        "tw": "Twi",
-        "uk": "Ukrainian",
-        "ur": "Urdu",
-        "uz": "Uzbek",
-        "vi": "Vietnamese",
-        "vo": "Volapük",
-        "cy": "Welsh",
-        "fy": "Western Frisian",
-        "wo": "Wolof",
-        "xh": "Xhosa",
-        "yi": "Yiddish",
-        "yo": "Yoruba",
-        "zu": "Zulu",
-        "und": "Other",
     }
 
     def __init__(self, api_key, channel_id):
@@ -279,6 +94,7 @@ class YTStatsProMax:
 
             overall_channel_data = items[0]['statistics']
             additional_channel_data = items[0]['snippet']
+            
 
             self.channel_statistics = {
                 'channelTitle': additional_channel_data['title'],
@@ -317,14 +133,16 @@ class YTStatsProMax:
         return most_common_category[0][0] if most_common_category else "Unknown"
 
 
-    # Get video data from the URL
+    # Get video data from the URL with progress bar
     def get_channel_video_data(self):
         channel_videos = self._get_channel_videos(limit=50)
         if not channel_videos:
             print("Error: No videos found for this channel.")
             return {}
+        
+        print(f"Total videos found: {len(channel_videos)}")
 
-        for video_id in channel_videos.keys():
+        for video_id in tqdm(channel_videos.keys(), desc="Fetching video data"):
             video_url = f'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,topicDetails&id={video_id}&key={self.api_key}'
             data = self._make_request(video_url)
             if not data:
@@ -349,19 +167,25 @@ class YTStatsProMax:
                 raw_topic_categories = topic_details.get('topicCategories', None)
                 processed_topic_categories = self.process_topic_categories(raw_topic_categories)
                 
-                audio_language = snippet.get('defaultAudioLanguage', "zxx")
+                published_at = snippet.get('publishedAt', None)
+                view_count = statistics.get('viewCount', 0)
+                
+                exact_elapsed_days = self.calculate_exact_elapsed_days(published_at)
+                average_views_per_day = self.calculate_average_views_per_day(view_count, exact_elapsed_days)               
                 
                 self.video_data[video_id] = {
-                    'publishedAt': snippet.get('publishedAt', "N/A"),
-                    'title': snippet.get('title', "No Title"),
-                    'description': snippet.get('description', "No Description"),
-                    'channelTitle': snippet.get('channelTitle', "Unknown"),
+                    'fetchedDate': self.RECORDED_UTC_TIME,
+                    'publishedAt': published_at,
+                    'elapsedDays': round(float(exact_elapsed_days), 4),
+                    'title': snippet.get('title', ""),
+                    'description': snippet.get('description', ""),
+                    'channelTitle': snippet.get('channelTitle', ""),
                     'tags': snippet.get('tags', None),
                     'category': category_name,
-                    'defaultAudioLanguage': self.get_audio_language(audio_language),
-                    'duration': content_details.get('duration', "N/A"),
+                    'duration': content_details.get('duration', ""),
                     'licensedContent': content_details.get('licensedContent', False),
-                    'viewCount': int(statistics.get('viewCount', 0)),
+                    'viewCount': int(view_count),
+                    'avgDailyViews': round(float(average_views_per_day), 2),
                     'likeCount': int(statistics.get('likeCount', 0)),
                     'commentCount': int(statistics.get('commentCount', 0)),
                     'topicCategories': processed_topic_categories
@@ -370,9 +194,6 @@ class YTStatsProMax:
                 print(f"Error processing video data for video ID {video_id}: {e}")
         return self.video_data
     
-    # Fetch audio mapping from map
-    def get_audio_language(self, language_code):
-        return self.DEFAULT_AUDIO_LANGUAGE.get(language_code, "Unknown")
     
     def process_topic_categories(self, topic_categories):
         
@@ -390,7 +211,6 @@ class YTStatsProMax:
             the topic categories 2]
         """
         if not topic_categories or not isinstance(topic_categories, list):
-            print("Invalid topic categories provided. Returning an empty list.")
             return []
 
         processed_categories = []
@@ -407,15 +227,41 @@ class YTStatsProMax:
         return processed_categories
     
     
+    def calculate_exact_elapsed_days(self, published_time):
+            
+        '''
+        Calculate the exact elapsed days from the published time
+        '''
+        
+        published_dt = datetime.strptime(published_time, "%Y-%m-%dT%H:%M:%SZ")
+        elapsed = datetime.strptime(self.RECORDED_UTC_TIME, "%Y-%m-%dT%H:%M:%SZ") - published_dt
+        elapsed_days = elapsed.total_seconds() / 60 / 60 / 24
+        return f'{elapsed_days:.4f}'
+    
+    
+    def calculate_average_views_per_day(self, view_count, exact_elapsed_days):
+            
+        '''
+        Calculate the average views per day
+        '''
+        
+        return f'{int(view_count) / float(exact_elapsed_days):.2f}'
+    
+    
     #Flip through each page for channel videos
     def _get_channel_videos(self, limit=None):
-        url = f'https://www.googleapis.com/youtube/v3/search?key={self.api_key}&channelId={self.channel_id}&part=id&order=date'
+        playlist_id = self.channel_id[:1] + "U" + self.channel_id[2:]
+        url = f'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={playlist_id}&key={self.api_key}'
         if limit:
             url += f"&maxResults={limit}"
 
         videos = {}
         next_page_token = None
-        for _ in range(10):  # Limit to 10 pages (50 videos per page)
+        for _ in range(10):
+            '''
+            Limit to 10 pages (50 videos per page) (Limit to 500 videos per channel)
+            I've tried bumping up to 20 though, still works but limit to 10 to be safe
+            '''
             if next_page_token:
                 url += f"&pageToken={next_page_token}"
 
@@ -427,9 +273,8 @@ class YTStatsProMax:
             items = data.get('items', [])
             for item in items:
                 try:
-                    if item['id']['kind'] == "youtube#video":
-                        video_id = item['id']['videoId']
-                        videos[video_id] = {}
+                    video_id = item['snippet']['resourceId']['videoId']
+                    videos[video_id] = {}
                 except KeyError as e:
                     print(f"Error extracting video ID: {e}")
 
@@ -447,7 +292,7 @@ class YTStatsProMax:
 
         #Safe filename
         channel_title = re.sub(r'[\\/*?:"<>|]', '_', self.channel_statistics['channelTitle']).replace(" ", "_").lower()
-        filename = f"{channel_title}_channel_statistics.json"
+        filename = f"{time.strftime('%y.%d.%m')}_{channel_title}_channel_info.json"
         
         if directory:
             os.makedirs(directory, exist_ok=True)
@@ -472,7 +317,7 @@ class YTStatsProMax:
 
         #Safe filename
         channel_title = re.sub(r'[\\/*?:"<>|]', '_', self.channel_statistics['channelTitle']).replace(" ", "_").lower()
-        filename = f"{channel_title}_video_data.json"
+        filename = f"{time.strftime('%y.%d.%m')}_{channel_title}_videos.json"
 
         if directory:
             os.makedirs(directory, exist_ok=True)

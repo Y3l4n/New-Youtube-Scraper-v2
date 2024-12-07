@@ -3,12 +3,14 @@ import sys
 import time
 import os
 import argparse
-import isodate
 import json
-from datetime import timedelta
+from datetime import datetime, timezone
 
 
 class YouTubeScraper:
+    
+    RECORDED_UTC_TIME = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        
     def __init__(self, api_key, country_codes, output_dir="output/"):
         self.api_key = api_key
         self.country_codes = country_codes
@@ -16,7 +18,7 @@ class YouTubeScraper:
 
         self.snippet_features = ["title", "publishedAt", "channelTitle", "description"]
 
-        self.category_mapping = {
+        self.CATEGORY_MAPPING = {
             "1": "Film & Animation",
             "2": "Autos & Vehicles",
             "10": "Music",
@@ -51,195 +53,6 @@ class YouTubeScraper:
             "44": "Trailers",
         }
         
-        self.default_audio_language = {
-            "zxx": "Not applicable",
-            "ab": "Abkhazian",
-            "aa": "Afar",
-            "af": "Afrikaans",
-            "sq": "Albanian",
-            "ase": "American Sign Language",
-            "am": "Amharic",
-            "ar": "Arabic",
-            "arc": "Aramaic",
-            "hy": "Armenian",
-            "as": "Assamese",
-            "ay": "Aymara",
-            "az": "Azerbaijani",
-            "bn": "Bangla",
-            "ba": "Bashkir",
-            "eu": "Basque",
-            "be": "Belarusian",
-            "bh": "Bihari",
-            "bi": "Bislama",
-            "bs": "Bosnian",
-            "br": "Breton",
-            "bg": "Bulgarian",
-            "yue": "Cantonese",
-            "yue-HK": "Cantonese (Hong Kong)",
-            "ca": "Catalan",
-            "chr": "Cherokee",
-            "zh": "Chinese",
-            "zh-CN": "Chinese (China)",
-            "zh-HK": "Chinese (Hong Kong)",
-            "zh-Hans": "Chinese (Simplified)",
-            "zh-SG": "Chinese (Singapore)",
-            "zh-TW": "Chinese (Taiwan)",
-            "zh-Hant": "Chinese (Traditional)",
-            "cho": "Choctaw",
-            "co": "Corsican",
-            "hr": "Croatian",
-            "cs": "Czech",
-            "da": "Danish",
-            "nl": "Dutch",
-            "nl-BE": "Dutch (Belgium)",
-            "nl-NL": "Dutch (Netherlands)",
-            "dz": "Dzongkha",
-            "en": "English",
-            "en-CA": "English (Canada)",
-            "en-IE": "English (Ireland)",
-            "en-GB": "English (United Kingdom)",
-            "en-US": "English (United States)",
-            "eo": "Esperanto",
-            "et": "Estonian",
-            "fo": "Faroese",
-            "fj": "Fijian",
-            "fil": "Filipino",
-            "fi": "Finnish",
-            "fr": "French",
-            "fr-BE": "French (Belgium)",
-            "fr-CA": "French (Canada)",
-            "fr-FR": "French (France)",
-            "fr-CH": "French (Switzerland)",
-            "gl": "Galician",
-            "ka": "Georgian",
-            "de": "German",
-            "de-AT": "German (Austria)",
-            "de-DE": "German (Germany)",
-            "de-CH": "German (Switzerland)",
-            "el": "Greek",
-            "kl": "Greenlandic (Kalaallisut)",
-            "gn": "Guarani",
-            "gu": "Gujarati",
-            "hak": "Hakka Chinese",
-            "hak-TW": "Hakka Chinese (Taiwan)",
-            "ha": "Hausa",
-            "iw": "Hebrew",
-            "hi": "Hindi",
-            "hi-Latn": "Hindi (Phonetic)",
-            "hu": "Hungarian",
-            "is": "Icelandic",
-            "ig": "Igbo",
-            "id": "Indonesian",
-            "ia": "Interlingua",
-            "ie": "Interlingue",
-            "iu": "Inuktitut",
-            "ik": "Inupiaq",
-            "ga": "Irish",
-            "it": "Italian",
-            "ja": "Japanese",
-            "jv": "Javanese",
-            "kn": "Kannada",
-            "ks": "Kashmiri",
-            "kk": "Kazakh",
-            "km": "Khmer",
-            "rw": "Kinyarwanda",
-            "tlh": "Klingon",
-            "ko": "Korean",
-            "ku": "Kurdish",
-            "ky": "Kyrgyz",
-            "lo": "Lao",
-            "la": "Latin",
-            "lv": "Latvian",
-            "ln": "Lingala",
-            "lt": "Lithuanian",
-            "lb": "Luxembourgish",
-            "mk": "Macedonian",
-            "mg": "Malagasy",
-            "ms": "Malay",
-            "ml": "Malayalam",
-            "mt": "Maltese",
-            "mi": "Maori",
-            "mr": "Marathi",
-            "mas": "Masai",
-            "nan": "Min Nan Chinese",
-            "nan-TW": "Min Nan Chinese (Taiwan)",
-            "mo": "Moldavian",
-            "mn": "Mongolian",
-            "my": "Myanmar (Burmese)",
-            "na": "Nauru",
-            "nv": "Navajo",
-            "ne": "Nepali",
-            "no": "Norwegian",
-            "oc": "Occitan",
-            "or": "Odia",
-            "om": "Oromo",
-            "ps": "Pashto",
-            "fa": "Persian",
-            "fa-AF": "Persian (Afghanistan)",
-            "fa-IR": "Persian (Iran)",
-            "pl": "Polish",
-            "pt": "Portuguese",
-            "pt-BR": "Portuguese (Brazil)",
-            "pt-PT": "Portuguese (Portugal)",
-            "pa": "Punjabi",
-            "qu": "Quechua",
-            "ro": "Romanian",
-            "rm": "Romansh",
-            "rn": "Rundi",
-            "ru": "Russian",
-            "ru-Latn": "Russian (Phonetic)",
-            "sm": "Samoan",
-            "sg": "Sango",
-            "sa": "Sanskrit",
-            "gd": "Scottish Gaelic",
-            "sr": "Serbian",
-            "sr-Cyrl": "Serbian (Cyrillic)",
-            "sr-Latn": "Serbian (Latin)",
-            "sh": "Serbo-Croatian",
-            "sdp": "Sherdukpen",
-            "sn": "Shona",
-            "sd": "Sindhi",
-            "si": "Sinhala",
-            "sk": "Slovak",
-            "sl": "Slovenian",
-            "so": "Somali",
-            "st": "Southern Sotho",
-            "es": "Spanish",
-            "es-419": "Spanish (Latin America)",
-            "es-MX": "Spanish (Mexico)",
-            "es-ES": "Spanish (Spain)",
-            "su": "Sundanese",
-            "sw": "Swahili",
-            "ss": "Swati",
-            "sv": "Swedish",
-            "tl": "Tagalog",
-            "tg": "Tajik",
-            "ta": "Tamil",
-            "tt": "Tatar",
-            "te": "Telugu",
-            "th": "Thai",
-            "bo": "Tibetan",
-            "ti": "Tigrinya",
-            "to": "Tongan",
-            "ts": "Tsonga",
-            "tn": "Tswana",
-            "tr": "Turkish",
-            "tk": "Turkmen",
-            "tw": "Twi",
-            "uk": "Ukrainian",
-            "ur": "Urdu",
-            "uz": "Uzbek",
-            "vi": "Vietnamese",
-            "vo": "Volapük",
-            "cy": "Welsh",
-            "fy": "Western Frisian",
-            "wo": "Wolof",
-            "xh": "Xhosa",
-            "yi": "Yiddish",
-            "yo": "Yoruba",
-            "zu": "Zulu",
-            "und": "Other",
-        }
 
     def api_request(self, page_token, country_code):
         request_url = (
@@ -266,12 +79,11 @@ class YouTubeScraper:
         """Return duration in ISO 8601 format or a default value."""
         return duration_str if duration_str else "PT0S"
 
-    def get_audio_language(self, language_code):
-        """Return the language name based on the language code."""
-        return self.default_audio_language.get(language_code, "Unknown")
     
     def get_videos(self, items):
+        
         videos = {}
+        
         for video in items:
             if "statistics" not in video or "contentDetails" not in video or "snippet" not in video:
                 continue
@@ -282,22 +94,33 @@ class YouTubeScraper:
             content_details = video["contentDetails"]
             topic_details = video.get("topicDetails", {})
 
+            category_id = snippet.get('categoryId', "N/A")
+            category_name = self.CATEGORY_MAPPING.get(category_id, "Unknown")
+            
             raw_topic_categories = topic_details.get('topicCategories', None)
             processed_topic_categories = self.process_topic_categories(raw_topic_categories)
             
-            audio_language = self.get_audio_language(snippet.get("defaultAudioLanguage", "zxx"))
+            published_at = snippet.get('publishedAt', None)
+            view_count = statistics.get('viewCount', 0)
+            
+            exact_elapsed_days = self.calculate_exact_elapsed_days(published_at)
+            average_views_per_day = self.calculate_average_views_per_day(view_count, exact_elapsed_days)  
+            
             # Construct video data
             video_data = {
-                "publishedAt": snippet.get("publishedAt", ""),
+                'fetchedDate': self.RECORDED_UTC_TIME,
+                "publishedAt": published_at,
+                'elapsedDays': round(float(exact_elapsed_days), 4),
                 "title": snippet.get("title", ""),
                 "description": snippet.get("description", ""),
                 "channelTitle": snippet.get("channelTitle", ""),
+                "channelId": snippet.get("channelId", ""),
                 "tags": snippet.get("tags", None),
-                "category": self.category_mapping.get(snippet.get("categoryId", "N/A"), "Unknown"),
-                "defaultAudioLanguage": audio_language,
-                "duration": self.parse_duration(content_details.get("duration", "PT0S")),
+                "category": category_name,
+                "duration": self.parse_duration(content_details.get("duration", "")),
                 "licensedContent": content_details.get("licensedContent", False),
-                "viewCount": int(statistics.get("viewCount", 0)),
+                "viewCount": int(view_count),
+                'avgDailyViews': round(float(average_views_per_day), 2),
                 "likeCount": int(statistics.get("likeCount", 0)),
                 "commentCount": int(statistics.get("commentCount", 0)),
                 "topicCategories": processed_topic_categories,
@@ -312,7 +135,6 @@ class YouTubeScraper:
     def process_topic_categories(self, topic_categories):
 
         if not topic_categories or not isinstance(topic_categories, list):
-            print("Invalid topic categories provided. Returning an empty list.")
             return []
 
         processed_categories = []
@@ -328,6 +150,27 @@ class YouTubeScraper:
         
         return processed_categories
 
+    def calculate_exact_elapsed_days(self, published_time):
+            
+        '''
+        Calculate the exact elapsed days from the published time
+        '''
+        
+        published_dt = datetime.strptime(published_time, "%Y-%m-%dT%H:%M:%SZ")
+        elapsed = datetime.strptime(self.RECORDED_UTC_TIME, "%Y-%m-%dT%H:%M:%SZ") - published_dt
+        elapsed_days = elapsed.total_seconds() / 60 / 60 / 24
+        return f'{elapsed_days:.4f}'
+    
+    
+    def calculate_average_views_per_day(self, view_count, exact_elapsed_days):
+            
+        '''
+        Calculate the average views per day
+        '''
+        
+        return f'{int(view_count) / float(exact_elapsed_days):.2f}'
+    
+    
     def get_pages(self, country_code):
         country_data = {}
         next_page_token = ""
@@ -347,7 +190,7 @@ class YouTubeScraper:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-        file_path = os.path.join(self.output_dir, f"{time.strftime('%y.%d.%m')}_{country_code}_videos.json")
+        file_path = os.path.join(self.output_dir, f"{time.strftime('%y.%d.%m')}_{country_code}_trending_videos.json")
         with open(file_path, "w", encoding="utf-8") as file:
             json.dump(country_data, file, ensure_ascii=False, indent=4)
 
@@ -364,7 +207,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--key_path", help="Path to the file containing the API key", default="api_key.txt")
     parser.add_argument("--country_code_path", help="Path to the file containing the list of country codes", default="country_codes.txt")
-    parser.add_argument("--output_dir", help="Path to save the outputted files", default="output/")
+    parser.add_argument("--output_dir", help="Path to save the outputted files", default="sample_newest_trending_videos/")
 
     args = parser.parse_args()
 
