@@ -248,26 +248,46 @@ class YTStatsProMax:
         return f'{int(view_count) / float(exact_elapsed_days):.2f}'
     
     
-    #Flip through each page for channel videos
     def _get_channel_videos(self, limit=None):
-        playlist_id = self.channel_id[:1] + "U" + self.channel_id[2:]
-        url = f'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={playlist_id}&key={self.api_key}'
-        if limit:
-            url += f"&maxResults={limit}"
+        # Generate playlist IDs for popular and short videos
+        popular_playlist_id = self.channel_id[:1] + "ULP" + self.channel_id[2:]
+        popular_short_playlist_id = self.channel_id[:1] + "UPS" + self.channel_id[2:]
 
+        # Generate URLs for both playlists
+        url1 = f'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={popular_playlist_id}&key={self.api_key}'
+        url2 = f'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={popular_short_playlist_id}&key={self.api_key}'
+
+        if limit:
+            url1 += f"&maxResults={limit}"
+            url2 += f"&maxResults={limit}"
+
+        # Fetch videos from both playlists
+        videos = {}
+        videos.update(self._fetch_videos_from_playlist(url1))
+        videos.update(self._fetch_videos_from_playlist(url2))
+
+        return videos
+
+    def _fetch_videos_from_playlist(self, url):
+        """
+        Helper function to fetch videos from a playlist
+        Args:
+            url (str): The URL of the playlist to fetch videos from.
+        Returns:
+            dict: A dictionary of video IDs as keys.
+        """
         videos = {}
         next_page_token = None
-        for _ in range(10):
-            '''
-            Limit to 10 pages (50 videos per page) (Limit to 500 videos per channel)
-            I've tried bumping up to 20 though, still works but limit to 10 to be safe
-            '''
-            if next_page_token:
-                url += f"&pageToken={next_page_token}"
 
-            data = self._make_request(url)
+        for _ in range(4):  # Limit to 10 pages (5 page for each urls) (500 videos max)
+            if next_page_token:
+                url_with_token = f"{url}&pageToken={next_page_token}"
+            else:
+                url_with_token = url
+
+            data = self._make_request(url_with_token)
             if not data:
-                print("Error: Failed to fetch channel videos.")
+                print("Error: Failed to fetch playlist videos.")
                 break
 
             items = data.get('items', [])
@@ -281,54 +301,81 @@ class YTStatsProMax:
             next_page_token = data.get('nextPageToken')
             if not next_page_token:
                 break
+
         return videos
 
-    #Dump channel statistics to json file. Json file will be stored in specified directory
     def dump_channel_statistics(self, directory=None):
         """Dump channel statistics to a JSON file."""
         if not self.channel_statistics:
             print("Error: No channel statistics to dump.")
             return
 
-        #Safe filename
-        channel_title = re.sub(r'[\\/*?:"<>|]', '_', self.channel_statistics['channelTitle']).replace(" ", "_").lower()
-        filename = f"{time.strftime('%y.%d.%m')}_{channel_title}_channel_info.json"
-        
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-            filepath = os.path.join(directory, filename)
-        else:
-            filepath = filename
+        # Generate a safe filename
+        filename = self._generate_safe_filename(
+            prefix=time.strftime('%y.%d.%m'),
+            title=self.channel_statistics['channelTitle'],
+            suffix="channel_info.json"
+        )
 
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(self.channel_statistics, f, indent=4, ensure_ascii=False)
-        print(f"Channel statistics dumped to {filepath}.")
+        # Dump the data using the helper function
+        self._dump_to_json(self.channel_statistics, filename, directory)
+        print(f"Channel statistics dumped to {filename}.")
 
 
-    #Dump video data to json file. Json file will be stored in specified directory
     def dump_video_data(self, directory=None):
-
+        """Dump video data to a JSON file."""
         if not self.video_data:
             print("Error: No video data to dump.")
             return
         if not self.channel_statistics:
-            print('Getting channel statistics for filename')
+            print("Getting channel statistics for filename")
             self.get_channel_statistics()
 
-        #Safe filename
-        channel_title = re.sub(r'[\\/*?:"<>|]', '_', self.channel_statistics['channelTitle']).replace(" ", "_").lower()
-        filename = f"{time.strftime('%y.%d.%m')}_{channel_title}_videos.json"
+        # Generate a safe filename
+        filename = self._generate_safe_filename(
+            prefix=time.strftime('%y.%d.%m'),
+            title=self.channel_statistics['channelTitle'],
+            suffix="videos.json"
+        )
 
+        # Dump the data using the helper function
+        self._dump_to_json(self.video_data, filename, directory)
+        print(f"Video data dumped to {filename}.")
+
+
+    def _generate_safe_filename(self, prefix, title, suffix):
+        """
+        Generate a safe filename using a prefix, title, and suffix.
+        Args:
+            prefix (str): A prefix for the filename (e.g., date).
+            title (str): The title to include in the filename.
+            suffix (str): The suffix for the filename (e.g., file extension).
+        Returns:
+            str: A safe, formatted filename.
+        """
+        # Sanitize the title by replacing unsafe characters and spaces
+        safe_title = re.sub(r'[\\/*?:"<>|]', '_', title).replace(" ", "_").lower()
+        return f"{prefix}_{safe_title}_{suffix}"
+
+
+    def _dump_to_json(self, data, filename, directory=None):
+        """
+        Dump data to a JSON file.
+        Args:
+            data (dict): The data to be dumped.
+            filename (str): The name of the file to write to.
+            directory (str, optional): The directory to store the file in. If None, uses the current directory.
+        """
+        # Determine the file path
         if directory:
             os.makedirs(directory, exist_ok=True)
             filepath = os.path.join(directory, filename)
         else:
             filepath = filename
-        
+
         # Write the data to a JSON file
         with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(self.video_data, f, indent=4, ensure_ascii=False)
-        print(f"Video data dumped to {filepath}.")
+            json.dump(data, f, indent=4, ensure_ascii=False)
         
         
     #I'm too lazy to add in more methods in dump
