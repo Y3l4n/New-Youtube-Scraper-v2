@@ -3,9 +3,36 @@
 
  With (a lot) of references from [Patrick Loeber's youtube-analyzer](https://github.com/patrickloeber/youtube-analyzer)
 
+ To-do: Label the `isTrending` based on the lowest `trendingPercentile` of the trending dataset to the channel dataset. Assign them percentile (if possible).
+
 ## This repository is for people in my DS project group. 
 
-Please read everything here (all of it, lots of new stuff).
+### Update 11/12
+I've updated the datasets inside these files:
+
+#### `processed_US_trending_videos.json`
+
+Contains the pre-processed dataset of trending videos. I just cut off the bottom 20% percentile ranked by these values:
+
+```sh
+percentiles = trending_df[['viewCount', 'likeCount', 'commentCount', 'engagementRate', 'avgDailyViews']].quantile(0.2)
+
+trending_df = trending_df[
+    (trending_df["viewCount"] >= 400000)
+    & (trending_df['likeCount'] >= 10000)
+    & (trending_df['commentCount'] >= 1000)
+    & (trending_df['engagementRate'] >= 0.015)
+    & (trending_df['avgDailyViews'] >= 100000)
+] # The values here are returned by 20% percentile of trending dataset
+```
+
+I haven't assigned the `isTrending` (just mark them all as 1, will do tomorrow) and `trendingPercentile` labels, but you can check in the `0_data_trend_explore.py`. I've implemented the basic properties needed to assign `trendingPercentile`. I'm considering sorting first by `avgDailyViews`, then `viewCount` and finally `likeCount`. I don't use `engagementRate` anymore because there is a risk of some videos got good stats on these properties but not engagement rate (old music videos and shorts mostly). If you got any ideas, please suggest.
+
+#### `sample_youtube_statistics.rar` 
+
+Contains all channels in the trending dataset (We will use US). The channel ids are fetched from the pre-processed `processed_US_trending_videos.json`. I've combined the data here and can upload, but I haven't labeled it yet. You can use the combine script I provide to combine them and try your labeling ideas (please report if you do so). 
+
+For my combined channel dataset, I will use the same cleaning techniques in `processed_US_trending_videos.json`, but now I cut off 10% bottom percentile only. See `3_channel_data_preprocess.py`.
 
 ### Update 7/12
 
@@ -19,19 +46,7 @@ Please read everything here (all of it, lots of new stuff).
 
 See sample data for more details.
 
-### Issues 7/12 (please read)
-
-The fetched video data via `YTStatsProMax` has a small problem (fixable). It now interact with a channel's uploaded playlist; every channel has this, for example [Post Malone's uploaded videos](https://www.youtube.com/playlist?list=UUeLHszkByNZtPKcaVXOCOQQ). It includes **ALL** uploaded videos, which means it may fetch unpublished videos (scheduled) (these has 0 `viewCount`), and so on. That's also the reason why I haven't fixed the `channel_statistics` in `YTStatsProMax`, because the number of videos provided in that url is inaccurate, compared to the uploaded playlist of the channel, and I don't know what to use `channel_statistics` for in our case, another option could be take what's fetchable, then pre-process later.
-
-I set the number of fetched videos to 500 (50 videos per page, 10 loops), for safety with Google API, and most channels have < 500 videos. I've tested with 1000 videos (20 loops) (some channels have crazy upload habits), still works, but it's too overwhelming a number. Plus, fetching too many videos may cause further problem in the prediction stage. Setting a limit of 500 may sound like a lot, but sometimes it omits (plenty) of old videos that are / were popular (this is tested).
-
-#### Proposed solution
-
-Fetch the channel videos from **Specific playlists** only, for example [Post Malone's popular videos](https://www.youtube.com/playlist?list=UULPeLHszkByNZtPKcaVXOCOQQ) and [Post Malone's popular short videos](https://www.youtube.com/playlist?list=UUPSeLHszkByNZtPKcaVXOCOQQ). These playlists have pattern to track it down via channel id; in fact, I find the uploaded videos id this way.
-
-Doing this will reduce the number of collected videos, also it will ensure all the popular videos are included. Not all of them will trend though, after seeing the lists, my rough guess is they include videos that have a high (? - not sure, around 100k according to Post Malone) `viewCount`. This will match our theme of trending videos as well. 
-
-Let me know your opinion / suggestion soon. (This is long because it's a whole day work).
+### Issues 7/12 (resolved)
 
 ### Helper functions
 
